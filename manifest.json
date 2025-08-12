@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "AI Clipper",
+  "version": "0.1.0",
+  "description": "Select text → right-click → save; popup shows clips.",
+  "action": { "default_popup": "index.html", "default_title": "AI Clipper" },
+
+  "permissions": ["storage", "contextMenus", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
+
+  "background": { "service_worker": "background.js", "type": "module" },
+
+  "icons": { "128": "icons/128.png" }
+}
