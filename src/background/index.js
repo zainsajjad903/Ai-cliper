@@ -1,3 +1,4 @@
+// ================= Imports =================
 // ================= Settings helpers =================
 async function getSettings() {
   const {
@@ -144,7 +145,7 @@ function canInject(url) {
   }
 }
 
-// ================= Context menu (only current user's projects; no duplicates) =================
+// ================= Context menu =================
 let menuBuildInProgress = false;
 let menuBuildQueued = false;
 
@@ -161,7 +162,6 @@ async function buildContextMenu() {
   ]);
   const uid = authUser?.uid || "__none__";
 
-  // only this user's projects + de-dupe
   const seen = new Set();
   const myProjects = [];
   for (const p of projects) {
@@ -171,7 +171,6 @@ async function buildContextMenu() {
     }
   }
 
-  // per-user default label (optional)
   const defKey = `lastActiveProjectId_${uid || "anon"}`;
   const store = await chrome.storage.local.get(defKey);
   const defaultPid = store[defKey] || "";
@@ -251,7 +250,6 @@ async function buildContextMenu() {
   }
 }
 
-// Build on install/startup and whenever data changes
 chrome.runtime.onInstalled.addListener(buildContextMenu);
 chrome.runtime.onStartup.addListener(buildContextMenu);
 buildContextMenu();
@@ -268,12 +266,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 // ================= Core save logic =================
 async function saveCurrentSelection(tabId, url, projectId) {
-  // avoid chrome:// etc
   if (!canInject(url)) return false;
 
   const pid = normalizeProjectId(projectId);
 
-  // get selected text
   let selectedText = "";
   try {
     const [{ result }] = await chrome.scripting.executeScript({
@@ -281,9 +277,7 @@ async function saveCurrentSelection(tabId, url, projectId) {
       func: () => window.getSelection()?.toString() || "",
     });
     selectedText = (result || "").trim();
-  } catch {
-    /* ignore */
-  }
+  } catch {}
 
   if (!selectedText) return false;
 
@@ -301,18 +295,23 @@ async function saveCurrentSelection(tabId, url, projectId) {
     selectedText,
     summary: "",
     tags: [],
-    projectId: pid, // may be ""
+    projectId: pid,
     aiStatus: "pending",
     aiSource: "manual",
     ownerUid,
     ownerEmail,
   };
 
-  // write immediately (pending)
   clips.unshift(clip);
   await chrome.storage.local.set({ clips });
 
-  // AI enrich
+  // --- Firestore test save ---
+  try {
+    saveClipToFirestore(clip);
+  } catch (err) {
+    console.error("[AI Clipper] Firestore test save error:", err);
+  }
+
   let result;
   try {
     result = await summarizeAndTag(selectedText);
