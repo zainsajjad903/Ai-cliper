@@ -1,5 +1,5 @@
-// ================= Imports =================
-// ================= Settings helpers =================
+import { saveClipToFirestore } from "../auth/firebase";
+
 async function getSettings() {
   const {
     openaiKey = "",

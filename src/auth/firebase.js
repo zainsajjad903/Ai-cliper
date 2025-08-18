@@ -10,16 +10,13 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-
-// Firestore imports
 import {
   getFirestore,
   collection,
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
-
-// 🔧 Tumhara Firebase config
+// ================= Firebase Config =================
 const firebaseConfig = {
   apiKey: "AIzaSyBDMCgjta6lwwBMc-9hfr7jEFZ1Gi3_vTo",
   authDomain: "crome-extention-47da2.firebaseapp.com",
@@ -33,13 +30,14 @@ const firebaseConfig = {
 let _auth;
 let _db;
 
+// ================= Init Functions =================
 export function initFirebase() {
-  if (!getApps().length) initializeApp(firebaseConfig);
+  if (!getApps().length) {
+    initializeApp(firebaseConfig);
+  }
   const auth = getAuth();
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   _auth = auth;
-
-  // Init Firestore
   _db = getFirestore();
   return auth;
 }
@@ -53,7 +51,7 @@ export function getFirestoreDb() {
   return _db;
 }
 
-// ================= Firestore test save =================
+// ================= Firestore Save Clip =================
 export async function saveClipToFirestore(clip) {
   try {
     initFirebase();
@@ -68,7 +66,7 @@ export async function saveClipToFirestore(clip) {
   }
 }
 
-// ================= Auth helpers =================
+// ================= Auth Helpers =================
 export function observeAuth(cb) {
   const auth = getFirebaseAuth();
   return onAuthStateChanged(auth, (user) => cb(user));
@@ -98,7 +96,6 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 export async function signInWithGoogle() {
   const clientId =
     "1077997612340-et8a5u4k06t2o8r3b31kekdm2b37lbg9.apps.googleusercontent.com";
-
   const redirectUri = `https://${chrome.runtime.id}.chromiumapp.org/`;
   const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=email%20profile`;
 
@@ -108,14 +105,11 @@ export async function signInWithGoogle() {
       async (redirectUrl) => {
         if (chrome.runtime.lastError) {
           console.error("Auth error:", chrome.runtime.lastError);
-          reject(chrome.runtime.lastError);
-          return;
+          return reject(chrome.runtime.lastError);
         }
-
         if (redirectUrl) {
           const params = new URL(redirectUrl).hash.substring(1);
           const accessToken = new URLSearchParams(params).get("access_token");
-
           if (accessToken) {
             try {
               const credential = GoogleAuthProvider.credential(

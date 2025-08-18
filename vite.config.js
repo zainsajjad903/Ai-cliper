@@ -1,21 +1,34 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
+import { resolve } from "path";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
     viteStaticCopy({
       targets: [
         { src: "manifest.json", dest: "." },
         { src: "public/icons", dest: "icons" },
-        { src: "src/background/index.js", dest: ".", rename: "background.js" },
+        { src: "public/vite.svg", dest: "." },
       ],
     }),
   ],
   build: {
+    rollupOptions: {
+      input: {
+        popup: resolve(__dirname, "index.html"), // popup UI
+        background: resolve(__dirname, "src/background/index.js"), // background script
+      },
+      output: {
+        entryFileNames: (chunk) => {
+          if (chunk.name === "background") {
+            return "background.js"; // background.js without hash
+          }
+          return "assets/[name]-[hash].js"; // popup, css, etc.
+        },
+      },
+    },
     outDir: "dist",
     emptyOutDir: true,
   },

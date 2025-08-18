@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { signOutUser } from "./auth/firebase";
-
 export default function App() {
   const [clips, setClips] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -37,6 +36,8 @@ export default function App() {
   const [openBulkPanelId, setOpenBulkPanelId] = useState(null);
 
   // summary toggle (per-clip)
+  const [newNote, setNewNote] = useState("");
+  const [notes, setNotes] = useState({});
   const [expandedSummaryIds, setExpandedSummaryIds] = useState(new Set());
   const isSummaryOpen = (id) => expandedSummaryIds.has(id);
   const toggleSummary = (id) =>
@@ -130,6 +131,23 @@ export default function App() {
     setSaving(false);
     if (!res?.ok) alert("Could not save selection.");
   }
+  const addNote = (cid, note) => {
+    if (!note.trim()) return;
+
+    setNotes((prev) => ({
+      ...prev,
+      [cid]: [...(prev[cid] || []), note], // agar pehle notes hain to add karo warna naya array banao
+    }));
+
+    setNewNote(""); // input clear
+  };
+  const handleDelete = (cid, idx, setNotes) => {
+    setNotes((prev) => {
+      const updatedNotes = [...(prev[cid] || [])];
+      updatedNotes.splice(idx, 1); // index wala note remove karo
+      return { ...prev, [cid]: updatedNotes };
+    });
+  };
 
   async function createProject() {
     if (!me?.uid) {
@@ -624,26 +642,36 @@ export default function App() {
   const selectionCount = selectedIds.size;
 
   return (
-    <div className="p-5 w-[430px] text-sm bg-gradient-to-br from-gray-50 to-white min-h-screen rounded-2xl shadow-xl border border-gray-200">
+    <div
+      className="p-6 w-[430px] text-sm min-h-screen rounded-2xl 
+    bg-gradient-to-br from-gray-900 via-gray-800 to-black 
+    shadow-2xl border border-gray-700 backdrop-blur-xl"
+    >
       {/* Header */}
-      <div className="relative flex items-center justify-between mb-5">
+      <div className="relative flex items-center justify-between mb-6">
         <h2
-          className="text-2xl font-bold tracking-tight text-gray-800 drop-shadow-sm px-5 py-2 rounded-2xl bg-gradient-to-r from-blue-100 via-blue-50 to-blue-100 border border-blue-200 shadow"
-          style={{ display: "inline-block", letterSpacing: "0.01em" }}
+          className="text-3xl font-extrabold tracking-tight text-white drop-shadow 
+      px-6 py-2 rounded-2xl 
+      bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
+      shadow-lg"
         >
           AI Clipper
         </h2>
         <button
-          className="rounded-full border border-gray-300 bg-white p-2 shadow hover:bg-gray-100 transition"
+          className="text-xs border border-white-800 rounded px-2 py-2 
+                      bg-gray-600/60 hover:text-indigo-300 transition"
           title="Menu"
           onClick={() => setShowMenu((v) => !v)}
         >
           ⋮
         </button>
         {showMenu && (
-          <div className="absolute right-0 top-10 z-50 w-48 rounded-xl border bg-white shadow">
+          <div
+            className="absolute right-0 top-12 z-50 w-52 rounded-1xl 
+        border border-gray-700 bg-gray-900 shadow-xl backdrop-blur-lg"
+          >
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={() => {
                 setShowSettings((v) => !v);
                 setShowMenu(false);
@@ -652,7 +680,7 @@ export default function App() {
               Settings
             </button>
             <button
-              className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600"
+              className="w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-400"
               onClick={async () => {
                 setShowMenu(false);
                 try {
@@ -662,40 +690,40 @@ export default function App() {
             >
               Sign out
             </button>
-            <hr />
+            <hr className="border-gray-700" />
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={exportMarkdown}
             >
               Export MD (current)
             </button>
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={exportJSON}
             >
               Export JSON (current)
             </button>
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={triggerImport}
             >
               Import JSON (project)
             </button>
-            <hr />
+            <hr className="border-gray-700" />
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={exportAllMD}
             >
               Export ALL MD
             </button>
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={exportAllJSON}
             >
               Export ALL JSON
             </button>
             <button
-              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-gray-200"
               onClick={triggerBulkImport}
             >
               Bulk Import (multi)
@@ -721,9 +749,10 @@ export default function App() {
       />
 
       {/* Project selector */}
-      <div className="mb-2 flex gap-2">
+      <div className="mb-3 flex gap-2">
         <select
-          className="flex-1 rounded-2xl border px-3 py-2"
+          className="flex-1 rounded-2xl border border-gray-700 bg-gray-900 text-gray-200 
+      px-3 py-2 shadow-md focus:ring-2 focus:ring-purple-500 transition"
           value={activeProjectId}
           onChange={async (e) => {
             const v = e.target.value;
@@ -741,13 +770,16 @@ export default function App() {
           ))}
         </select>
         <button
-          className="rounded-2xl border px-3 py-2"
+          className="rounded-2xl border border-gray-700 px-3 py-2  bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-medium 
+      shadow hover:scale-105 hover:shadow-lg transition-all"
           onClick={createProject}
         >
           + New
         </button>
         <button
-          className="rounded-2xl border px-3 py-2 hover:bg-red-100"
+          className="rounded-2xl border border-gray-700 px-3 py-2 bg-gradient-to-r 
+      from-red-500 to-rose-600 text-white font-medium 
+      shadow hover:scale-105 hover:shadow-lg transition-all disabled:opacity-50"
           onClick={() => deleteProject(activeProjectId)}
           disabled={!activeProjectId}
           title="Delete selected project"
@@ -759,22 +791,25 @@ export default function App() {
       {/* Search + view */}
       <div className="flex items-center gap-2">
         <input
-          className="flex-1 rounded-2xl border px-3 py-2"
+          className="flex-1 rounded-2xl border border-gray-700 bg-gray-900 text-gray-200 
+      px-3 py-2 shadow-md focus:ring-2 focus:ring-indigo-500 transition"
           placeholder="Search text, URL, tags…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <label className="text-xs flex items-center gap-1">
+        <label className="text-xs flex items-center gap-1 text-gray-300">
           <input
             type="checkbox"
+            className="accent-purple-500"
             checked={compactView}
             onChange={(e) => setCompactView(e.target.checked)}
           />{" "}
           Compact
         </label>
-        <label className="text-xs flex items-center gap-1">
+        <label className="text-xs flex items-center gap-1 text-gray-300">
           <input
             type="checkbox"
+            className="accent-indigo-500"
             checked={reorderMode}
             onChange={(e) => setReorderMode(e.target.checked)}
           />{" "}
@@ -784,7 +819,7 @@ export default function App() {
 
       {/* Tag filter bar */}
       {allTagsInProject.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap gap-2">
           {allTagsInProject.map((t, i) => {
             const on = activeTags.includes(t);
             return (
@@ -797,9 +832,12 @@ export default function App() {
                       : [...prev, t]
                   )
                 }
-                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] leading-none ${
-                  on ? "bg-gray-200" : ""
-                }`}
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-[12px] font-medium tracking-tight transition-all duration-300 shadow 
+            ${
+              on
+                ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-transparent shadow-lg scale-105"
+                : "bg-gray-900 text-gray-300 border border-gray-700 hover:border-indigo-500 hover:text-white hover:shadow-md"
+            }`}
               >
                 {t}
               </button>
@@ -811,7 +849,7 @@ export default function App() {
                 setQ("");
                 setActiveTags([]);
               }}
-              className="ml-auto text-xs underline"
+              className="ml-auto text-xs text-red-400 underline hover:text-red-300 transition"
             >
               Clear filters
             </button>
@@ -821,14 +859,21 @@ export default function App() {
 
       {/* Save + Refresh */}
       <button
-        className="mt-2 w-full rounded-2xl border px-3 py-2"
+        className="mt-3 w-full rounded-2xl border px-3 py-2 font-semibold 
+             bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
+             text-white shadow-md hover:shadow-xl hover:scale-[1.02] 
+             transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={saveFromSelection}
         disabled={saving || !me?.uid} // 🔒 disable if not signed in
       >
         {saving ? "Saving..." : me?.uid ? "Save selection" : "Sign in to save"}
       </button>
+
       <button
-        className="mt-2 w-full rounded-2xl border px-3 py-2"
+        className="mt-2 w-full rounded-2xl border border-gray-700 px-3 py-2 
+             bg-gray-900 text-gray-200 shadow hover:border-indigo-500 
+             hover:text-white hover:shadow-lg hover:scale-[1.02] 
+             transition-all duration-300"
         onClick={loadAll}
       >
         Refresh
@@ -836,27 +881,39 @@ export default function App() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="mt-3 border rounded-xl p-3 space-y-2">
-          <div className="font-medium">OpenAI Settings</div>
+        <div className="mt-4 rounded-2xl border border-gray-700 bg-gray-900/60 backdrop-blur-lg p-4 space-y-3 shadow-xl">
+          <div className="font-semibold text-lg text-indigo-300">
+            ⚙️ OpenAI Settings
+          </div>
+
           <div className="flex gap-2 items-center">
             <input
-              className="flex-1 rounded-2xl border px-3 py-2"
+              className="flex-1 rounded-xl border border-gray-700 bg-gray-800/70 text-gray-200 px-3 py-2 
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                   placeholder-gray-400 shadow-sm"
               type="password"
               placeholder="OpenAI API Key"
               value={openaiKey}
               onChange={(e) => setOpenaiKey(e.target.value)}
             />
             <button
-              className="rounded-2xl border px-3 py-2"
+              className="rounded-xl px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 
+                   text-white font-medium shadow-md hover:shadow-lg hover:scale-[1.03] 
+                   transition-all duration-300"
               onClick={saveSettings}
             >
               Save
             </button>
-            <button className="rounded-2xl border px-3 py-2" onClick={clearKey}>
+            <button
+              className="rounded-xl px-3 py-2 border border-red-600 text-red-400 
+                   hover:bg-red-600/20 hover:text-red-300 transition-all duration-300"
+              onClick={clearKey}
+            >
               Clear
             </button>
           </div>
-          <label className="flex items-center gap-2 text-sm">
+
+          <label className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition">
             <input
               type="checkbox"
               checked={useMockIfFail}
@@ -864,7 +921,8 @@ export default function App() {
             />
             Use mock AI if key missing or API fails
           </label>
-          <label className="flex items-center gap-2 text-sm">
+
+          <label className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition">
             <input
               type="checkbox"
               checked={aiDisabled}
@@ -872,8 +930,9 @@ export default function App() {
             />
             Disable AI entirely (never call OpenAI)
           </label>
-          <div className="text-xs opacity-70">
-            Tip: Prefer saving the key via this UI or a small proxy—avoid
+
+          <div className="text-xs text-gray-400 italic">
+            💡 Tip: Prefer saving the key via this UI or a small proxy—avoid
             hardcoding.
           </div>
         </div>
@@ -882,7 +941,7 @@ export default function App() {
       {/* Results */}
       <div className="mt-3 space-y-3">
         {filteredClips.length === 0 ? (
-          <p className="opacity-70">
+          <p className="opacity-70 text-gray-400 italic">
             {q || activeTags.length
               ? "No matches. Try clearing filters."
               : activeProjectId
@@ -893,22 +952,25 @@ export default function App() {
           filteredClips.map((c) => (
             <article
               key={c.id}
-              className={`relative border rounded-xl p-3 ${
-                compactView ? "py-2" : ""
-              }`}
+              className={`relative rounded-2xl border border-gray-700/50 
+                    bg-gray-900/50 backdrop-blur-lg shadow-md 
+                    hover:shadow-xl hover:scale-[1.01] transition-all duration-300 p-4 
+                    ${compactView ? "py-2" : ""}`}
               onMouseLeave={() =>
                 openBulkPanelId === c.id && setOpenBulkPanelId(null)
               }
             >
-              <header className="mb-1 flex items-center justify-between gap-2">
+              {/* Header */}
+              <header className="mb-2 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(c.id)}
                     onChange={() => toggleSelect(c.id)}
                     title="Select for bulk actions"
+                    className="accent-indigo-500 scale-110"
                   />
-                  <time className="text-xs opacity-70">
+                  <time className="text-xs text-gray-400">
                     {new Date(c.createdAt).toLocaleString()}
                   </time>
                 </div>
@@ -916,14 +978,16 @@ export default function App() {
                   {reorderMode && (
                     <>
                       <button
-                        className="text-xs border rounded px-2 py-0.5"
+                        className="text-xs border border-white-600 rounded px-2 py-0.5 
+                             hover:bg-gray-700/60 hover:text-indigo-300 transition"
                         onClick={() => moveCard(c.id, "up")}
                         title="Move up"
                       >
                         ↑
                       </button>
                       <button
-                        className="text-xs border rounded px-2 py-0.5"
+                        className="text-xs border border-white-600 rounded px-2 py-0.5 
+                             hover:bg-gray-700/60 hover:text-indigo-300 transition"
                         onClick={() => moveCard(c.id, "down")}
                         title="Move down"
                       >
@@ -932,7 +996,8 @@ export default function App() {
                     </>
                   )}
                   <select
-                    className="text-xs rounded-xl border px-2 py-0.5"
+                    className="text-xs rounded-xl border border-gray-700 bg-gray-800/70 
+                         px-2 py-0.5 text-gray-200 focus:ring-2 focus:ring-indigo-500"
                     value={c.projectId || ""}
                     onChange={(e) => moveClip(c.id, e.target.value)}
                   >
@@ -944,7 +1009,8 @@ export default function App() {
                     ))}
                   </select>
                   <button
-                    className="text-xs border rounded px-2 py-0.5"
+                    className="text-xs border border-white-800 rounded px-2 py-0.5 
+                      bg-gray-600/60 hover:text-indigo-300 transition"
                     title="More"
                     onClick={() =>
                       setOpenClipMenuId((prev) => (prev === c.id ? null : c.id))
@@ -954,29 +1020,35 @@ export default function App() {
                   </button>
                 </div>
               </header>
-
+              {/* Dropdown Menu */}
               {openClipMenuId === c.id && (
-                <div className="absolute right-2 top-10 z-40 w-44 rounded-xl border bg-white shadow">
+                <div
+                  className="absolute right-2 top-10 z-40 w-48 rounded-lg 
+                  border border-white-700 bg-[#0f172a]/95 shadow-xl overflow-hidden"
+                >
                   <button
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                    className="w-full text-left px-3 py-2 text-gray-200 text-sm 
+                 hover:bg-indigo-600/20 hover:text-indigo-300 transition"
                     onClick={() => {
                       exportClipMD(c);
                       setOpenClipMenuId(null);
                     }}
                   >
-                    Export MD
+                    Export MD (current)
                   </button>
                   <button
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                    className="w-full text-left px-3 py-2 text-gray-200 text-sm 
+                 hover:bg-indigo-600/20 hover:text-indigo-300 transition"
                     onClick={() => {
                       exportClipJSON(c);
                       setOpenClipMenuId(null);
                     }}
                   >
-                    Export JSON
+                    Export JSON (current)
                   </button>
                   <button
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                    className="w-full text-left px-3 py-2 text-gray-200 text-sm 
+                 hover:bg-indigo-600/20 hover:text-indigo-300 transition"
                     onClick={() => {
                       setOpenBulkPanelId(c.id);
                       setOpenClipMenuId(null);
@@ -987,7 +1059,8 @@ export default function App() {
                     Bulk actions…
                   </button>
                   <button
-                    className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600"
+                    className="w-full text-left px-3 py-2 text-sm text-red-400 
+                 hover:bg-red-600/20 hover:text-red-300 transition"
                     onClick={() => {
                       deleteClip(c.id);
                       setOpenClipMenuId(null);
@@ -997,15 +1070,19 @@ export default function App() {
                   </button>
                 </div>
               )}
-
+              {/* Bulk Panel */}
               {openBulkPanelId === c.id && (
-                <div className="absolute right-2 top-10 z-40 w-[280px] rounded-xl border bg-white shadow p-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs opacity-70">
+                <div
+                  className="absolute right-2 top-10 z-40 w-72 rounded-lg 
+                  border border-gray-700 bg-[#0f172a]/95 shadow-xl p-3 space-y-2"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-xs text-gray-400">
                       {selectionCount} selected
                     </div>
                     <button
-                      className="text-xs border rounded px-2 py-0.5"
+                      className="text-xs border border-gray-600 rounded px-2 py-0.5 
+                   hover:bg-gray-700/70 hover:text-indigo-300 transition"
                       onClick={() => setOpenBulkPanelId(null)}
                       title="Close"
                     >
@@ -1014,26 +1091,28 @@ export default function App() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
-                      className="text-xs border rounded px-2 py-1"
+                      className="text-xs border border-gray-600 rounded px-2 py-1 
+                   hover:bg-gray-700/70 hover:text-indigo-300 transition"
                       onClick={selectAllVisible}
                     >
                       Select all
                     </button>
                     <button
-                      className="text-xs border rounded px-2 py-1"
+                      className="text-xs border border-gray-600 rounded px-2 py-1 
+                   hover:bg-gray-700/70 hover:text-indigo-300 transition"
                       onClick={clearSelection}
                     >
                       Clear
                     </button>
                     <select
-                      className="text-xs rounded border px-2 py-1 flex-1"
+                      className="text-xs rounded border border-gray-700 bg-gray-800/80 
+                   px-2 py-1 flex-1 text-gray-200 focus:ring-2 focus:ring-indigo-500"
                       onChange={(e) => {
                         if (!e.target.value) return;
                         bulkMove(e.target.value);
                         e.target.value = "";
                       }}
                       defaultValue=""
-                      title="Move selected to project"
                     >
                       <option value="">Move to…</option>
                       {projects.map((p) => (
@@ -1043,32 +1122,37 @@ export default function App() {
                       ))}
                     </select>
                     <button
-                      className="text-xs border rounded px-2 py-1 hover:bg-red-100"
+                      className="text-xs border border-red-600 text-red-400 rounded px-2 py-1 
+                   hover:bg-red-600/20 hover:text-red-300 transition"
                       onClick={bulkDelete}
                     >
                       Delete selected
                     </button>
                     <button
-                      className="text-xs border rounded px-2 py-1"
+                      className="text-xs border border-gray-600 rounded px-2 py-1 
+                   hover:bg-gray-700/70 hover:text-indigo-300 transition"
                       onClick={exportSelectedMD}
                     >
-                      Export selected MD
+                      Export MD
                     </button>
                     <button
-                      className="text-xs border rounded px-2 py-1"
+                      className="text-xs border border-gray-600 rounded px-2 py-1 
+                   hover:bg-gray-700/70 hover:text-indigo-300 transition"
                       onClick={exportSelectedJSON}
                     >
-                      Export selected JSON
+                      Export JSON
                     </button>
                   </div>
                 </div>
               )}
-
+              {/* Source link + content */}
               {!compactView && (
                 <>
                   <div className="flex items-center gap-2">
                     <a
-                      className="inline-flex items-center gap-1 rounded-2xl border px-2 py-1 text-xs bg-white hover:bg-gray-100 shadow-sm"
+                      className="inline-flex items-center gap-1 rounded-xl border border-gray-700 
+                           bg-gray-800/80 px-2 py-1 text-xs text-indigo-300 hover:bg-indigo-600/20 
+                           shadow-sm transition"
                       href={c.url}
                       target="_blank"
                       rel="noreferrer"
@@ -1079,10 +1163,10 @@ export default function App() {
                   </div>
 
                   <div className="mt-3 relative pt-4">
-                    <span className="absolute top-0 left-0 text-[11px] uppercase tracking-wide opacity-60">
+                    <span className="absolute top-0 left-0 text-[11px] uppercase tracking-wide text-gray-400">
                       Text:
                     </span>
-                    <p className="text-[13px] whitespace-pre-line leading-tight">
+                    <p className="text-[13px] whitespace-pre-line leading-tight text-gray-200">
                       {(c.selectedText || "")
                         .replace(/\r/g, "")
                         .replace(/\n{2,}/g, "\n")
@@ -1091,163 +1175,109 @@ export default function App() {
                   </div>
                 </>
               )}
+              {(notes[c.id] || []).length > 0 && (
+                <div className="mt-3 relative pt-4">
+                  <span className="absolute top-0 left-0 text-[11px] uppercase tracking-wide text-gray-400">
+                    Notes:
+                  </span>
 
-              {c.aiStatus === "pending" && (
-                <div className="mt-2 text-xs opacity-70 flex items-center gap-2">
-                  <span
-                    className="inline-block animate-spin"
-                    style={{
-                      width: 10,
-                      height: 10,
-                      border: "2px solid #ccc",
-                      borderTopColor: "transparent",
-                      borderRadius: "50%",
-                    }}
-                  />
-                  Summarizing…
+                  {/* Single Box for All Notes */}
+                  <div className="p-3 bg-gray-800 rounded-lg shadow-md border border-gray-200 space-y-2">
+                    {(notes[c.id] || []).map((n, idx) => (
+                      <div
+                        key={idx}
+                        className="flex justify-between items-start"
+                      >
+                        <p className="text-[13px] text-white leading-tight whitespace-pre-line">
+                          {n}
+                        </p>
+                        <button
+                          onClick={() => handleDelete(c.id, idx, setNotes)}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          ✖
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-
-              {/* Summary (toggle) */}
+              {/* Add Tag Row + Summary Toggle */}
+              <hr className="my-3 border-gray-700/60" />
+              {/* Summary Section */}
               {c.summary && isSummaryOpen(c.id) && (
-                <div className="mt-2 relative pt-3 ">
-                  <span className="absolute top-0 left-0 text-[11px] uppercase tracking-wide opacity-60">
+                <>
+                  <span className="block text-[11px] uppercase tracking-wide text-gray-400">
                     Summary:
                   </span>
-                  <p className="text-sm italic">{c.summary}</p>
-                </div>
-              )}
-
-              {editingId === c.id ? (
-                <div className="mt-2 space-y-2">
-                  <div>
-                    <label className="text-xs opacity-70">Summary</label>
-                    <textarea
-                      className="w-full border rounded p-1 text-sm"
-                      value={editSummary}
-                      onChange={(e) => setEditSummary(e.target.value)}
-                      rows={3}
-                    />
+                  <div className="mt-2 text-[13px] leading-tight text-gray-300">
+                    {c.summary}
                   </div>
-                  <div>
-                    <label className="text-xs opacity-70">Notes</label>
-                    <textarea
-                      className="w-full border rounded p-1 text-sm"
-                      value={editNotes}
-                      onChange={(e) => setEditNotes(e.target.value)}
-                      rows={3}
-                      placeholder="Add your personal note…"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="px-2 py-1 text-xs border rounded"
-                      onClick={() => saveEdits(c.id)}
-                    >
-                      Save
-                    </button>
-                    <button
-                      className="px-2 py-1 text-xs border rounded"
-                      onClick={() => {
-                        setEditingId(null);
-                        setEditSummary("");
-                        setEditNotes("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {!compactView && (
-                    <>
-                      {c.notes ? (
-                        <>
-                          <p className="mt-2 text-sm whitespace-pre-wrap">
-                            <span className="text-xs opacity-70">Notes: </span>
-                            {c.notes}
-                          </p>
-                          <button
-                            className="mt-1 text-xs underline"
-                            onClick={() => {
-                              setEditingId(c.id);
-                              setEditSummary(c.summary || "");
-                              setEditNotes(c.notes || "");
-                            }}
-                            title="Edit note"
-                          >
-                            Edit
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          className="inline-flex items-center rounded-2xl border px-2 py-1 text-xs bg-white hover:bg-gray-100 shadow-sm mt-2"
-                          onClick={() => {
-                            setEditingId(c.id);
-                            setEditSummary(c.summary || "");
-                            setEditNotes(c.notes || "");
-                          }}
-                        >
-                          + Add note
-                        </button>
-                      )}
-                    </>
-                  )}
                 </>
               )}
-
-              {!!c.tags?.length && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {c.tags.map((t, i) => (
+              <hr className="my-3 border-gray-700/60" />
+              {c.tags && c.tags.length > 0 && (
+                <div className="mt-2">
+                  <span className="block text-[11px] uppercase tracking-wide text-gray-400 mb-1">
+                    Tags:
+                  </span>
+                  {c.tags.map((tag, idx) => (
                     <span
-                      key={i}
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-none"
+                      key={idx}
+                      className="px-3 py-1 rounded-full bg-gray-900 text-white text-xs  border border-gray-700"
                     >
-                      {t}
-                      <button
-                        className="text-[11px]"
-                        title="Remove tag"
-                        onClick={() => removeTag(c.id, t)}
-                      >
-                        ×
-                      </button>
+                      {tag}
                     </span>
                   ))}
                 </div>
               )}
+              <hr className="my-3 border-gray-700/60" />
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Add note..."
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-700 bg-gray-800/60 px-2 py-1 text-sm 
+           text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={() => addNote(c.id, newNote)}
+                  className="px-3 py-1 text-xs rounded-lg border border-gray-600 
+        hover:bg-indigo-600/20 text-gray-200 transition"
+                >
+                  Add Note
+                </button>
+              </div>
 
-              {/* Add tag + Summary toggle row */}
-              {!compactView && (
-                <div className="mt-2 flex items-center gap-1">
-                  <input
-                    className="flex-[1_1_55%] rounded-2xl border px-2 py-1 text-xs"
-                    style={{ minWidth: 0 }}
-                    placeholder="Add tag…"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") addTag(c.id, newTag);
-                    }}
-                  />
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Add tag..."
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-700 bg-gray-800/60 px-2 py-1 text-sm 
+ text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={() => addTag(c.id, newTag)}
+                  className="px-3 py-1 text-xs rounded-lg border border-gray-600 
+ hover:bg-indigo-600/20 text-gray-200 transition"
+                >
+                  Add
+                </button>
+
+                {/* Summary Toggle Button */}
+                {c.summary && (
                   <button
-                    className="text-xs border rounded px-2 py-1"
-                    onClick={() => addTag(c.id, newTag)}
+                    onClick={() => toggleSummary(c.id)}
+                    className="px-3 py-1 text-xs rounded-lg border border-gray-600 
+   hover:bg-indigo-600/20 text-gray-200 transition"
                   >
-                    Add
+                    {isSummaryOpen(c.id) ? "Close Summary" : "Summary"}
                   </button>
-
-                  {c.summary && (
-                    <button
-                      className="text-xs border rounded px-2 py-1"
-                      onClick={() => toggleSummary(c.id)}
-                      title={isSummaryOpen(c.id) ? "Hide summary" : "summary"}
-                    >
-                      {isSummaryOpen(c.id) ? "Hide summary" : "summary"}
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </article>
           ))
         )}
