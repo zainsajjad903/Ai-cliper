@@ -6,9 +6,9 @@
   "action": { "default_popup": "index.html", "default_title": "AI Clipper" },
 
   "permissions": ["storage", "contextMenus", "tabs", "scripting", "identity"],
-  "host_permissions": ["<all_urls>"],
 
-  "background": { "service_worker": "background.js", "type": "module" },
+
+  "background": { "service_worker": "background.js", "type": "module", "activeTab" },
 
   "icons": { "128": "icons/128.png" }
 }
