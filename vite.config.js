@@ -8,7 +8,8 @@ export default defineConfig({
     react(),
     viteStaticCopy({
       targets: [
-        { src: "manifest.json", dest: "." },
+        { src: "src/manifest.json", dest: "." },
+
         { src: "public/icons", dest: "icons" },
         { src: "public/vite.svg", dest: "." },
       ],
