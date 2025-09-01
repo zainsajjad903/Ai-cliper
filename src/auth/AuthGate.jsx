@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  initFirebase,
   observeAuth,
   signInEmailPassword,
   signUpEmailPassword,
@@ -18,14 +17,14 @@ export default function AuthGate({ children }) {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    initFirebase();
-
     const unsub = observeAuth(async (u) => {
       setUser(u || null);
       setLoading(false);
       try {
         await chrome.storage.local.set({
-          authUser: u ? { uid: u.uid, email: u.email } : null,
+          authUser: u
+            ? { uid: u.uid, email: u.email, idToken: u.idToken || null }
+            : null,
         });
       } catch {}
     });
@@ -36,10 +35,17 @@ export default function AuthGate({ children }) {
     e.preventDefault();
     setErr("");
     try {
+      let u;
       if (mode === "login") {
-        await signInEmailPassword(email.trim(), password);
+        u = await signInEmailPassword(email.trim(), password);
       } else {
-        await signUpEmailPassword(email.trim(), password);
+        u = await signUpEmailPassword(email.trim(), password);
+      }
+      if (u) {
+        setUser(u);
+        await chrome.storage.local.set({
+          authUser: { uid: u.uid, email: u.email, idToken: u.idToken },
+        });
       }
     } catch (e) {
       setErr(e?.message || "Authentication failed");
@@ -53,7 +59,7 @@ export default function AuthGate({ children }) {
       if (u) {
         setUser(u);
         await chrome.storage.local.set({
-          authUser: { uid: u.uid, email: u.email },
+          authUser: { uid: u.uid, email: u.email, idToken: u.idToken },
         });
       }
     } catch (e) {

@@ -16,6 +16,7 @@ export default defineConfig({
     }),
   ],
   build: {
+    polyfillModulePreload: false,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, "index.html"), // popup UI
