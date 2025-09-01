@@ -5,6 +5,7 @@
   "description": "Select text → right-click → save; popup shows clips.",
   "action": { "default_popup": "index.html", "default_title": "AI Clipper" },
 
+<<<<<<< HEAD:src/manifest.json
   "permissions": [
     "storage",
     "contextMenus",
@@ -13,8 +14,12 @@
     "identity",
     "activeTab"
   ],
+=======
+  "permissions": ["storage", "contextMenus", "tabs", "scripting", "identity"],
+>>>>>>> 1bdba0eb70a5403874b33fc9ec7dff10f68f6d2b:manifest.json
 
-  "background": { "service_worker": "background.js", "type": "module" },
+
+  "background": { "service_worker": "background.js", "type": "module", "activeTab" },
 
   "icons": { "128": "icons/128.png" }
 }
